@@ -101,6 +101,7 @@ const MentionsInput = React.createClass({
 
       selectionStart: null,
       selectionEnd: null,
+      changedMention: true,
 
       suggestions: {},
 
@@ -124,12 +125,15 @@ const MentionsInput = React.createClass({
     // pass all props that we don't use through to the input control
     let props = omit(this.props, keys(MentionsInput.propTypes));
 
+    let renderSuggestions = Object.keys(this.state.suggestions).length > 0;
+    if (this.state.changedMention || this.props.value && this.props.value.length === 0 || renderSuggestions) {
+      props.value = this.getPlainText();
+    }
+
     return {
       ...props,
 
       ...substyle(this.props, getModifiers(this.props, "input")),
-
-      value: this.getPlainText(),
 
       ...(!readOnly && !disabled && {
         onChange: this.handleChange,
@@ -252,6 +256,7 @@ const MentionsInput = React.createClass({
     }
 
     var value = LinkedValueUtils.getValue(this.props) || "";
+    var beforeMentions = utils.getMentions(value, this.props.markup);
     var newPlainTextValue = ev.target.value;
 
     // Derive the new value to set by applying the local change in the textarea's plain text
@@ -265,6 +270,9 @@ const MentionsInput = React.createClass({
 
     // In case a mention is deleted, also adjust the new plain text value
     newPlainTextValue = utils.getPlainText(newValue, this.props.markup, this.props.displayTransform);
+    if (beforeMentions.length == 0 && newPlainTextValue !== ev.target.value); {
+      newPlainTextValue = ev.target.value;
+    }
 
     // Save current selection after change to be able to restore caret position after rerendering
     var selectionStart = ev.target.selectionStart;
@@ -275,7 +283,9 @@ const MentionsInput = React.createClass({
     // selection range that are automatically deleted
     var startOfMention = utils.findStartOfMentionInPlainText(value, this.props.markup, selectionStart, this.props.displayTransform);
 
-    if(startOfMention !== undefined && this.state.selectionEnd > startOfMention) {
+    var mentions = utils.getMentions(newValue, this.props.markup);
+    if(startOfMention !== undefined && this.state.selectionEnd > startOfMention &&
+       beforeMentions.length !== mentions.length) {
       // only if a deletion has taken place
       selectionStart = startOfMention;
       selectionEnd = selectionStart;
@@ -286,11 +296,15 @@ const MentionsInput = React.createClass({
       selectionStart: selectionStart,
       selectionEnd: selectionEnd,
       setSelectionAfterMentionChange: setSelectionAfterMentionChange,
+      changedMention: beforeMentions.length !== mentions.length,
     });
 
     var mentions = utils.getMentions(newValue, this.props.markup);
 
     // Propagate change
+    if (beforeMentions === 0 && mentions.length === 0) {
+      newValue = newPlainTextValue;
+    }
     // var handleChange = this.getOnChange(this.props) || emptyFunction;
     var eventMock = { target: { value: newValue } };
     // this.props.onChange.call(this, eventMock, newValue, newPlainTextValue, mentions);
@@ -335,29 +349,32 @@ const MentionsInput = React.createClass({
 
     if(values(KEY).indexOf(ev.keyCode) >= 0) {
       ev.preventDefault();
-    }
 
-    switch(ev.keyCode) {
-      case KEY.ESC: {
-        this.clearSuggestions();
-        return;
+      switch(ev.keyCode) {
+        case KEY.ESC: {
+          this.clearSuggestions();
+          return;
+        }
+        case KEY.DOWN: {
+          this.shiftFocus(+1);
+          return;
+        }
+        case KEY.UP: {
+          this.shiftFocus(-1);
+          return;
+        }
+        case KEY.RETURN: {
+          this.selectFocused();
+          return;
+        }
+        case KEY.TAB: {
+          this.selectFocused();
+          return;
+        }
       }
-      case KEY.DOWN: {
-        this.shiftFocus(+1);
-        return;
-      }
-      case KEY.UP: {
-        this.shiftFocus(-1);
-        return;
-      }
-      case KEY.RETURN: {
-        this.selectFocused();
-        return;
-      }
-      case KEY.TAB: {
-        this.selectFocused();
-        return;
-      }
+    }
+    else {
+      this.props.onKeyDown(ev);
     }
   },
 
@@ -387,7 +404,8 @@ const MentionsInput = React.createClass({
     if(!this._suggestionsMouseDown) {
       this.setState({
         selectionStart: null,
-        selectionEnd: null
+        selectionEnd: null,
+        changedMention: false,
       });
     };
     this._suggestionsMouseDown = false;
@@ -461,6 +479,14 @@ const MentionsInput = React.createClass({
     isComposing = false;
   },
 
+  componentWillReceiveProps: function(nextProps) {
+    if (this.props && nextProps && nextProps.convoId !== this.props.convoId) {
+      this.setState({
+        changedMention: true
+      });
+    }
+  },
+
   componentDidMount: function() {
     this.updateSuggestionsPosition();
   },
@@ -472,7 +498,9 @@ const MentionsInput = React.createClass({
     // the cursor to jump to the end
     if (this.state.setSelectionAfterMentionChange) {
       this.setState({setSelectionAfterMentionChange: false});
-      this.setSelection(this.state.selectionStart, this.state.selectionEnd);
+      if (this.state.changedMention) {
+        this.setSelection(this.state.selectionStart, this.state.selectionEnd);
+      }
     }
   },
 
@@ -556,9 +584,14 @@ const MentionsInput = React.createClass({
       plainTextValue: plainTextValue
     };
 
-    this.setState({
-      suggestions: utils.extend({}, this.state.suggestions, update)
-    });
+    const {focusIndex} = this.state;
+    const suggestionsCount = utils.countSuggestions(this.suggestions);
+    if (suggestions.length) {
+      this.setState({
+        suggestions: utils.extend({}, this.state.suggestions, update),
+        focusIndex: focusIndex >= suggestionsCount ? Math.max(suggestionsCount - 1, 0) : focusIndex,
+      });
+    }
   },
 
   addMention: function(suggestion, {mentionDescriptor, querySequenceStart, querySequenceEnd, plainTextValue}) {
@@ -583,7 +616,8 @@ const MentionsInput = React.createClass({
     this.setState({
       selectionStart: newCaretPosition,
       selectionEnd: newCaretPosition,
-      setSelectionAfterMentionChange: true
+      setSelectionAfterMentionChange: true,
+      changedMention: true,
     });
 
     // Propagate change
