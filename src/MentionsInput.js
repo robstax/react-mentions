@@ -449,7 +449,7 @@ const MentionsInput = React.createClass({
       position.left = left
     }
 
-    position.top = caretPosition.top - highlighter.scrollTop;
+    position.bottom = highlighter.offsetHeight + 'px';
 
     if(isEqual(position, this.state.suggestionsPosition)) {
       return;

@@ -23,21 +23,21 @@ class SuggestionsOverlay extends Component {
   };
 
   componentDidUpdate() {
-    const { suggestions } = this.refs
-    if (!suggestions || suggestions.offsetHeight >= suggestions.scrollHeight || !this.props.scrollFocusedIntoView) {
+    const { suggestions, suggestionsContainer } = this.refs
+    if (!suggestions || suggestionsContainer.offsetHeight >= suggestionsContainer.scrollHeight || !this.props.scrollFocusedIntoView) {
       return
     }
 
-    const scrollTop = suggestions.scrollTop
+    const scrollTop = suggestionsContainer.scrollTop
     let { top, bottom } = suggestions.children[this.props.focusIndex].getBoundingClientRect();
-    const { top: topContainer } = suggestions.getBoundingClientRect();
+    const { top: topContainer } = suggestionsContainer.getBoundingClientRect();
     top = top - topContainer + scrollTop;
     bottom = bottom - topContainer + scrollTop;
     
     if(top < scrollTop) {
-      suggestions.scrollTop = top
-    } else if(bottom > suggestions.offsetHeight) {
-      suggestions.scrollTop = bottom - suggestions.offsetHeight
+      suggestionsContainer.scrollTop = top
+    } else if(bottom > suggestionsContainer.offsetHeight) {
+      suggestionsContainer.scrollTop = bottom - suggestionsContainer.offsetHeight
     }
   }
 
@@ -48,7 +48,7 @@ class SuggestionsOverlay extends Component {
     }
 
     return (
-      <div
+      <div ref="suggestionsContainer"
         {...substyle(this.props)}
         onMouseDown={this.props.onMouseDown}>
 
@@ -126,11 +126,4 @@ class SuggestionsOverlay extends Component {
 export default Radium(SuggestionsOverlay);
 
 const substyle = defaultStyle({
-  minWidth: 100,
-
-  list: {
-    margin: 0,
-    padding: 0,
-    listStyleType: "none",
-  }
 });
