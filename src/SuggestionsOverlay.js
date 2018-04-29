@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import Radium from './OptionalRadium';
 import { defaultStyle } from 'substyle';
 
@@ -33,7 +34,7 @@ class SuggestionsOverlay extends Component {
     const { top: topContainer } = suggestionsContainer.getBoundingClientRect();
     top = top - topContainer + scrollTop;
     bottom = bottom - topContainer + scrollTop;
-    
+
     if(top < scrollTop) {
       suggestionsContainer.scrollTop = top
     } else if(bottom > suggestionsContainer.offsetHeight) {
