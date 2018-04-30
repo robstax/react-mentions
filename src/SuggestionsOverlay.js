@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React, { Component } from 'react';
 import Radium from './OptionalRadium';
 import { defaultStyle } from 'substyle';
 
@@ -121,7 +122,7 @@ class SuggestionsOverlay extends Component {
     this.props.onSelect(suggestion, descriptor);
   }
 
-};
+}
 
 export default Radium(SuggestionsOverlay);
 

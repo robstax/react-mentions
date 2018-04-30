@@ -1,4 +1,5 @@
-import React, { Component, PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React, { Component } from 'react';
 import Radium from './OptionalRadium';
 import omit from 'lodash/omit';
 import keys from 'lodash/keys';

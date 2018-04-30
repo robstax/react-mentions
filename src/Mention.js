@@ -1,4 +1,5 @@
-import React, { PropTypes } from 'react';
+import PropTypes from 'prop-types';
+import React from 'react';
 import Radium from './OptionalRadium';
 
 import utils from './utils';
@@ -12,7 +13,7 @@ function Mention({ display, className, style }) {
       { display }
     </strong>
   );
-};
+}
 
 Mention.propTypes = {
   /**
