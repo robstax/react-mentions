@@ -70,10 +70,14 @@ const MentionsInput = React.createClass({
     onBlur: PropTypes.func,
     onChange: PropTypes.func,
 
+    // TODO React 15.6.2 update PropTypes problems
+    /*
     children: PropTypes.oneOfType([
       PropTypes.element,
       PropTypes.arrayOf(PropTypes.element),
     ]).isRequired
+    */
+    children: PropTypes.any.isRequired
   },
 
   getDefaultProps: function () {

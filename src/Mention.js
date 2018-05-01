@@ -32,11 +32,14 @@ Mention.propTypes = {
 
   renderSuggestion: PropTypes.func,
 
+  // TODO React 15.6.2 update PropTypes problems
+  /*
   trigger: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.instanceOf(RegExp)
   ]),
-
+  */
+  trigger: PropTypes.any,
   isLoading: PropTypes.bool,
   className: PropTypes.string,
   style: PropTypes.object

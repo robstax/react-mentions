@@ -12,6 +12,8 @@ class Suggestion extends Component {
     id: PropTypes.string.isRequired,
     query: PropTypes.string.isRequired,
 
+    // TODO React 15.6.2 update PropTypes problems
+    /*
     suggestion: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.shape({
@@ -19,6 +21,8 @@ class Suggestion extends Component {
         display: PropTypes.string
       }),
     ]).isRequired,
+    */
+    suggestion: PropTypes.any.isRequired,
     descriptor: PropTypes.object.isRequired,
 
     focused: PropTypes.bool,

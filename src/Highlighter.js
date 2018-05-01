@@ -20,11 +20,14 @@ const _generateComponentKey = (usedKeys, id) => {
 class Highlighter extends Component {
 
   static propTypes = {
+    // TODO React 15.6.2 update PropTypes problems
+    /*
     selection: PropTypes.shape({
       start: PropTypes.number,
       end: PropTypes.number
     }).isRequired,
-
+    */
+    selection: PropTypes.object.isRequired,
     markup: PropTypes.string.isRequired,
     value: PropTypes.string.isRequired,
 
