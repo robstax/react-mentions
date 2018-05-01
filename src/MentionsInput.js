@@ -110,8 +110,10 @@ const MentionsInput = React.createClass({
   },
 
   render: function() {
+    // React 15.6.2 update "Unknown prop `_radiumDidResolveStyles` on <div> tag"
+    let tstyle = omit(substyle(this.props, getModifiers(this.props)), ['_radiumDidResolveStyles']);
     return (
-      <div ref="container" {...substyle(this.props, getModifiers(this.props))}>
+      <div ref="container" {...tstyle}>
         { this.renderControl() }
         { this.renderSuggestionsOverlay() }
       </div>
