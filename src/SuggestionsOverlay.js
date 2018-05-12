@@ -23,21 +23,28 @@ class SuggestionsOverlay extends Component {
   };
 
   componentDidUpdate() {
-    const { suggestions } = this.refs
-    if (!suggestions || suggestions.offsetHeight >= suggestions.scrollHeight || !this.props.scrollFocusedIntoView) {
+    // teams-mentions reposition popup
+    const { suggestions, suggestionsContainer } = this.refs
+    if (
+      !suggestions ||
+      suggestionsContainer.offsetHeight >= suggestionsContainer.scrollHeight ||
+      !this.props.scrollFocusedIntoView
+    ) {
       return
     }
 
-    const scrollTop = suggestions.scrollTop
-    let { top, bottom } = suggestions.children[this.props.focusIndex].getBoundingClientRect();
-    const { top: topContainer } = suggestions.getBoundingClientRect();
-    top = top - topContainer + scrollTop;
-    bottom = bottom - topContainer + scrollTop;
+    const scrollTop = suggestionsContainer.scrollTop
+    let { top, bottom } = suggestions.children[
+      this.props.focusIndex
+    ].getBoundingClientRect()
+    const { top: topContainer } = suggestionsContainer.getBoundingClientRect()
+    top = top - topContainer + scrollTop
+    bottom = bottom - topContainer + scrollTop
 
-    if(top < scrollTop) {
-      suggestions.scrollTop = top
-    } else if(bottom > suggestions.offsetHeight) {
-      suggestions.scrollTop = bottom - suggestions.offsetHeight
+    if (top < scrollTop) {
+      suggestionsContainer.scrollTop = top
+    } else if (bottom > suggestionsContainer.offsetHeight) {
+      suggestionsContainer.scrollTop = bottom - suggestionsContainer.offsetHeight
     }
   }
 
@@ -50,16 +57,9 @@ class SuggestionsOverlay extends Component {
     }
 
     return (
-      <div
-        {...style}
-        onMouseDown={onMouseDown}
-      >
-
-        <ul
-          ref="suggestions"
-          { ...style("list") }
-        >
-          { this.renderSuggestions() }
+      <div ref="suggestionsContainer" {...style} onMouseDown={onMouseDown}>
+        <ul ref="suggestions" {...style('list')}>
+          {this.renderSuggestions()}
         </ul>
 
         { this.renderLoadingIndicator() }
@@ -130,18 +130,6 @@ class SuggestionsOverlay extends Component {
 }
 
 const styled = defaultStyle(({ position }) => ({
-  position: "absolute",
-  zIndex: 1,
-  backgroundColor: "white",
-  marginTop: 14,
-  minWidth: 100,
-  ...position,
-
-  list: {
-    margin: 0,
-    padding: 0,
-    listStyleType: "none",
-  }
-}));
+}))
 
 export default styled(SuggestionsOverlay);

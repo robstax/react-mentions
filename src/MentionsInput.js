@@ -93,6 +93,9 @@ class MentionsInput extends React.Component {
     this.suggestions = {};
 
     this.state = {
+      // teams-mentions
+      changedMention: true,
+
       focusIndex: 0,
 
       selectionStart: null,
@@ -241,8 +244,11 @@ class MentionsInput extends React.Component {
       return;
     }
 
-    let value = this.props.value || "";
-    let newPlainTextValue = ev.target.value;
+    let value = this.props.value || ''
+    let newPlainTextValue = ev.target.value
+    // teams-mentions
+    // cache current mentions for later comparisions
+    let beforeMentions = utils.getMentions(value, this.props.markup)
 
     // Derive the new value to set by applying the local change in the textarea's plain text
     let newValue = utils.applyChangeToValue(
@@ -254,8 +260,16 @@ class MentionsInput extends React.Component {
     );
 
     // In case a mention is deleted, also adjust the new plain text value
-    newPlainTextValue = utils.getPlainText(newValue, this.props.markup, this.props.displayTransform);
-
+    newPlainTextValue = utils.getPlainText(
+      newValue,
+      this.props.markup,
+      this.props.displayTransform
+    )
+    // teams-mentions
+    // if we had prior mentions adjust plaintext to reflect them
+    if (beforeMentions.length == 0 && newPlainTextValue !== ev.target.value); {
+      newPlainTextValue = ev.target.value;
+    }
     // Save current selection after change to be able to restore caret position after rerendering
     let selectionStart = ev.target.selectionStart;
     let selectionEnd = ev.target.selectionEnd;
@@ -263,9 +277,20 @@ class MentionsInput extends React.Component {
 
     // Adjust selection range in case a mention will be deleted by the characters outside of the
     // selection range that are automatically deleted
-    let startOfMention = utils.findStartOfMentionInPlainText(value, this.props.markup, selectionStart, this.props.displayTransform);
-
-    if(startOfMention !== undefined && this.state.selectionEnd > startOfMention) {
+    let startOfMention = utils.findStartOfMentionInPlainText(
+      value,
+      this.props.markup,
+      selectionStart,
+      this.props.displayTransform
+    )
+    // teams-mentions
+    // update if number of mentions has changed
+    let mentions = utils.getMentions(newValue, this.props.markup);
+    if (
+      startOfMention !== undefined &&
+      this.state.selectionEnd > startOfMention &&
+      beforeMentions.length !== mentions.length
+    ) {
       // only if a deletion has taken place
       selectionStart = startOfMention;
       selectionEnd = selectionStart;
@@ -276,9 +301,16 @@ class MentionsInput extends React.Component {
       selectionStart: selectionStart,
       selectionEnd: selectionEnd,
       setSelectionAfterMentionChange: setSelectionAfterMentionChange,
-    });
+      changedMention: beforeMentions.length !== mentions.length,
+    })
 
-    let mentions = utils.getMentions(newValue, this.props.markup);
+    mentions = utils.getMentions(newValue, this.props.markup);
+
+    // teams-mentions
+    // reset to plaintext strings that have no mentions
+    if (beforeMentions.length === 0 && mentions.length === 0) {
+      newValue = newPlainTextValue;
+    }
 
     // Propagate change
     // let handleChange = this.getOnChange(this.props) || emptyFunction;
@@ -323,33 +355,41 @@ class MentionsInput extends React.Component {
       return;
     }
 
-    if(values(KEY).indexOf(ev.keyCode) >= 0) {
-      ev.preventDefault();
-    }
+    //teams-mentions
+    // default to a keydown
+    if (values(KEY).indexOf(ev.keyCode) >= 0) {
+      ev.preventDefault()
 
-    switch(ev.keyCode) {
-      case KEY.ESC: {
-        this.clearSuggestions();
-        return;
-      }
-      case KEY.DOWN: {
-        this.shiftFocus(+1);
-        return;
-      }
-      case KEY.UP: {
-        this.shiftFocus(-1);
-        return;
-      }
-      case KEY.RETURN: {
-        this.selectFocused();
-        return;
-      }
-      case KEY.TAB: {
-        this.selectFocused();
-        return;
+      switch (ev.keyCode) {
+        case KEY.ESC: {
+          this.clearSuggestions()
+          return
+        }
+        case KEY.DOWN: {
+          this.shiftFocus(+1)
+          return
+        }
+        case KEY.UP: {
+          this.shiftFocus(-1)
+          return
+        }
+        case KEY.RETURN: {
+          this.selectFocused()
+          return
+        }
+        case KEY.TAB: {
+          this.selectFocused()
+          return
+        }
+        default: {
+          return
+        }
       }
     }
-  };
+    else {
+      this.props.onKeyDown(ev);
+    }
+  }
 
   shiftFocus = (delta) => {
     let suggestionsCount = utils.countSuggestions(this.state.suggestions);
@@ -380,9 +420,11 @@ class MentionsInput extends React.Component {
     if(!clickedSuggestion) {
       this.setState({
         selectionStart: null,
-        selectionEnd: null
-      });
-    };
+        selectionEnd: null,
+        // teams-mentions
+        changedMention: false,
+      })
+    }
 
     window.setTimeout(() => {
       this.updateHighlighterScroll();
@@ -420,8 +462,8 @@ class MentionsInput extends React.Component {
     } else {
       position.left = left
     }
-
-    position.top = caretPosition.top - highlighter.scrollTop;
+    // teams-mentions reposition popup
+    position.bottom = highlighter.offsetHeight + 'px';
 
     if(isEqual(position, this.state.suggestionsPosition)) {
       return;
@@ -451,6 +493,16 @@ class MentionsInput extends React.Component {
     isComposing = false;
   };
 
+  // teams-mentions
+  // update mentions when switching spaces
+  componentWillReceiveProps(nextProps) {
+    if (this.props && nextProps && nextProps.convoId !== this.props.convoId) {
+      this.setState({
+        changedMention: true
+      });
+    }
+  }
+
   componentDidMount() {
     this.updateSuggestionsPosition();
   }
@@ -461,8 +513,12 @@ class MentionsInput extends React.Component {
     // maintain selection in case a mention is added/removed causing
     // the cursor to jump to the end
     if (this.state.setSelectionAfterMentionChange) {
-      this.setState({setSelectionAfterMentionChange: false});
-      this.setSelection(this.state.selectionStart, this.state.selectionEnd);
+      this.setState({ setSelectionAfterMentionChange: false })
+      // teams-mentions
+      // only change if we signaled metion changed
+      if (this.state.changedMention) {
+        this.setSelection(this.state.selectionStart, this.state.selectionEnd);
+      }
     }
   }
 
@@ -562,9 +618,8 @@ class MentionsInput extends React.Component {
       querySequenceStart: querySequenceStart,
       querySequenceEnd: querySequenceEnd,
       results: suggestions,
-      plainTextValue: plainTextValue
-    };
-
+      plainTextValue: plainTextValue,
+    }
     // save in property so that multiple sync state updates from different mentions sources
     // won't overwrite each other
     this.suggestions = utils.extend({}, this.suggestions, update)
@@ -599,8 +654,9 @@ class MentionsInput extends React.Component {
     this.setState({
       selectionStart: newCaretPosition,
       selectionEnd: newCaretPosition,
-      setSelectionAfterMentionChange: true
-    });
+      setSelectionAfterMentionChange: true,
+      changedMention: true,
+    })
 
     // Propagate change
     const eventMock = { target: { value: newValue }};
