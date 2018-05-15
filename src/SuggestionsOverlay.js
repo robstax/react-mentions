@@ -130,6 +130,17 @@ class SuggestionsOverlay extends Component {
 }
 
 const styled = defaultStyle(({ position }) => ({
-}))
+  position: "absolute",
+  zIndex: 1,
+  backgroundColor: "white",
+  marginTop: 14,
+  minWidth: 100,
+  ...position,
+
+  list: {
+    margin: 0,
+    padding: 0,
+    listStyleType: "none",
+  }}))
 
 export default styled(SuggestionsOverlay);
